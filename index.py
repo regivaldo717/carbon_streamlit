@@ -14,7 +14,7 @@ def calcular_TCR(TAL, RAF):
 def calcular_RAF(AFE, RPF):
     return AFE * RPF
 
-# Parâmetros fixos
+# Parâmetros fixos (ajustarei depois)
 TAL = 0.5
 IAF = 0.8
 AFE = 0.2
