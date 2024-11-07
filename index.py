@@ -22,7 +22,6 @@ RPF = 0.6
 
 st.title("Simulação do Crescimento da Vegetação Forrageira")
 
-# Permitir entrada manual para o tempo de análise em dias
 tempo_dias = st.number_input("Digite o tempo de análise em dias:", min_value=1, max_value=10000, value=100, step=1)
 
 # Cálculo para conversão de dias em anos, meses, semanas e dias
