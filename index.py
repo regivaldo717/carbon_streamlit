@@ -22,8 +22,10 @@ RPF = 0.6
 
 st.title("Simulação do Crescimento da Vegetação Forrageira")
 
-tempo_dias = st.slider("Digite o tempo de análise em dias:", min_value=1, max_value=10000, value=100, step=1)
+# Permitir entrada manual para o tempo de análise em dias
+tempo_dias = st.number_input("Digite o tempo de análise em dias:", min_value=1, max_value=10000, value=100, step=1)
 
+# Cálculo para conversão de dias em anos, meses, semanas e dias
 anos = tempo_dias // 365
 meses = (tempo_dias % 365) // 30
 semanas = ((tempo_dias % 365) % 30) // 7
@@ -32,16 +34,19 @@ dias_restantes = ((tempo_dias % 365) % 30) % 7
 st.write("Valor de tempo inserido:", tempo_dias, "dias")
 st.write(f"Isso equivale a: {anos} anos, {meses} meses, {semanas} semanas e {dias_restantes} dias.")
 
+# Cálculo de TCC, RAF e TCR
 TCC = calcular_TCC(TAL, IAF)
 RAF = calcular_RAF(AFE, RPF)
 TCR = calcular_TCR(TAL, RAF)
 
+# Simulação do crescimento da biomassa
 tempo = np.arange(0, tempo_dias + 1)
 biomassa = np.zeros(len(tempo))
 biomassa[0] = 1  
 for i in range(1, len(tempo)):
     biomassa[i] = biomassa[i-1] * np.exp(TCR)
 
+# Gráfico do crescimento da biomassa
 fig = go.Figure()
 fig.add_trace(go.Scatter(x=tempo, y=biomassa, mode='lines', name='Biomassa'))
 fig.update_layout(title="Crescimento da Planta Forrageira",
