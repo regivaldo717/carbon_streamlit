@@ -1,3 +1,4 @@
+#pip install -r requirements.txt
 import streamlit as st
 import plotly.graph_objects as go
 import numpy as np
@@ -57,9 +58,6 @@ fig_clima = go.Figure()
 fig_clima.add_trace(go.Bar(x=meses, y=precipitacao_media, marker=dict(color=precipitacao_media, colorscale='viridis_r', showscale=True)))
 fig_clima.update_layout(xaxis_title='Meses', yaxis_title='Precipitação (mm)')
 st.plotly_chart(fig_clima, use_container_width=True)
-
-
-
 
 
 
