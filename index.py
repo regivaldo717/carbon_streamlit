@@ -3,6 +3,8 @@ import streamlit as st
 import plotly.graph_objects as go
 import numpy as np
 import pandas as pd
+import folium
+from streamlit_folium import folium_static
 
 # Configuração da página
 st.set_page_config(
@@ -13,7 +15,32 @@ st.set_page_config(
 )
 
 # Título principal
-st.markdown("# Simulação do Crescimento Agrícola no MS")
+st.markdown("# Simulação do Crescimento Agrícola no MT")
+
+# Criação do mapa do Mato Grosso
+m = folium.Map(location=[-12.6819, -56.9211], zoom_start=6)
+
+# Adicionar marcadores para principais regiões agrícolas
+regioes_mt = {
+    "Sinop": [-11.8607, -55.5094],
+    "Sorriso": [-12.5425, -55.7211],
+    "Lucas do Rio Verde": [-13.0588, -55.9042],
+    "Nova Mutum": [-13.8374, -56.0743],
+    "Campo Novo do Parecis": [-13.6589, -57.8903],
+    "Primavera do Leste": [-15.5551, -54.2993],
+    "Rondonópolis": [-16.4673, -54.6372]
+}
+
+for cidade, coords in regioes_mt.items():
+    folium.Marker(
+        coords,
+        popup=cidade,
+        icon=folium.Icon(color='green', icon='info-sign')
+    ).add_to(m)
+
+# Exibir o mapa
+st.write("### Principais Regiões Agrícolas do Mato Grosso")
+folium_static(m)
 
 # Opções de culturas agrícolas no MS
 culturas = {
