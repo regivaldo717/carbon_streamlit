@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import folium
 from streamlit_folium import folium_static
+from folium import plugins
 
 # Configuração da página
 st.set_page_config(
@@ -15,32 +16,91 @@ st.set_page_config(
 )
 
 # Título principal
-st.markdown("# Simulação do Crescimento Agrícola no MT")
+st.markdown("# Simulação do Crescimento Agrícola no MS")
 
-# Criação do mapa do Mato Grosso
-m = folium.Map(location=[-12.6819, -56.9211], zoom_start=6)
+# Criação do mapa do Mato Grosso do Sul
+m = folium.Map(location=[-20.4435, -54.6478], zoom_start=6)
 
 # Adicionar marcadores para principais regiões agrícolas
-regioes_mt = {
-    "Sinop": [-11.8607, -55.5094],
-    "Sorriso": [-12.5425, -55.7211],
-    "Lucas do Rio Verde": [-13.0588, -55.9042],
-    "Nova Mutum": [-13.8374, -56.0743],
-    "Campo Novo do Parecis": [-13.6589, -57.8903],
-    "Primavera do Leste": [-15.5551, -54.2993],
-    "Rondonópolis": [-16.4673, -54.6372]
+regioes_ms = {
+    "Campo Grande": [-20.4435, -54.6478],
+    "Dourados": [-22.2211, -54.8056],
+    "Três Lagoas": [-20.7849, -51.7019],
+    "Corumbá": [-19.0077, -57.6511],
+    "Ponta Porã": [-22.5296, -55.7203],
+    "Aquidauana": [-20.4666, -55.7868]
 }
 
-for cidade, coords in regioes_mt.items():
+for cidade, coords in regioes_ms.items():
     folium.Marker(
         coords,
         popup=cidade,
         icon=folium.Icon(color='green', icon='info-sign')
     ).add_to(m)
 
-# Exibir o mapa
-st.write("### Principais Regiões Agrícolas do Mato Grosso")
-folium_static(m)
+# Botões para controle do mapa
+col1, col2 = st.columns(2)
+
+# Botão para mapa de calor
+if col1.button("Ver Mapa de Calor de Precipitação"):
+    # Criar mapa de calor
+    m_heat = folium.Map(location=[-20.4435, -54.6478], zoom_start=6)
+    
+    # Adicionar dados de precipitação como mapa de calor
+    heat_data = []
+    for cidade, coords in regioes_ms.items():
+        # Usar precipitação média anual como peso
+        peso = np.mean(precipitacao_media)
+        heat_data.append([coords[0], coords[1], peso])
+    
+    # Adicionar mapa de calor
+    folium.plugins.HeatMap(
+        heat_data,
+        min_opacity=0.4,
+        max_val=200,
+        radius=25,
+        blur=15,
+        gradient={'0.4': 'yellow', '0.6': 'orange', '0.8': 'red', '1': 'purple'}
+    ).add_to(m_heat)
+    
+    # Exibir mapa de calor
+    st.write("### Mapa de Calor - Intensidade de Precipitação")
+    folium_static(m_heat)
+else:
+    # Exibir mapa padrão
+    st.write("### Principais Regiões Agrícolas do Mato Grosso")
+    folium_static(m)
+
+# Botão para animação mensal
+if col2.button("Ver Variação Mensal de Precipitação"):
+    # Criar mapa para animação
+    m_time = folium.Map(location=[-20.4435, -54.6478], zoom_start=6)
+    
+    # Criar dados para cada mês
+    for mes, precipitacao in zip(meses, precipitacao_media):
+        feature_group = folium.FeatureGroup(name=mes)
+        
+        for cidade, coords in regioes_ms.items():
+            # Criar círculo com tamanho baseado na precipitação
+            folium.CircleMarker(
+                location=coords,
+                radius=(precipitacao/10),  # Ajustar tamanho do círculo
+                popup=f"{cidade}: {precipitacao}mm",
+                color='purple',
+                fill=True,
+                fill_color='purple',
+                fill_opacity=precipitacao/200  # Opacidade baseada na precipitação
+            ).add_to(feature_group)
+        
+        feature_group.add_to(m_time)
+    
+    # Adicionar controle de camadas
+    folium.LayerControl().add_to(m_time)
+    
+    # Exibir mapa com animação
+    st.write("### Variação Mensal de Precipitação")
+    st.write("Selecione os meses na caixa de controle no canto superior direito do mapa")
+    folium_static(m_time)
 
 # Opções de culturas agrícolas no MS
 culturas = {
@@ -76,17 +136,145 @@ else:
 # Tempo de análise
 tempo_dias = st.sidebar.number_input("Tempo de análise (dias)", ciclo_colheita, 1000, 300, 1)
 
-# Dados climáticos médios para MS
-precipitacao_media = [200, 180, 160, 120, 80, 50, 30, 40, 90, 130, 170, 190] # mm/mês
-meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
+from datetime import datetime, timedelta
 
-#plot dos dados climáticos Com escala de cores
-fig_clima = go.Figure()
-fig_clima.add_trace(go.Bar(x=meses, y=precipitacao_media, marker=dict(color=precipitacao_media, colorscale='viridis_r', showscale=True)))
-fig_clima.update_layout(xaxis_title='Meses', yaxis_title='Precipitação (mm)')
-st.plotly_chart(fig_clima, use_container_width=True)
+# Seletor de ano
+anos_disponiveis = ['2020', '2021', '2022', '2023', '2024']
+ano_selecionado = st.selectbox('Selecione o ano para análise', anos_disponiveis)
+
+# Carregar dados meteorológicos do ano selecionado
+df_meteo = pd.read_csv(f'precipitacao_MS/data/dados_meteorologicos_MS_{ano_selecionado}.csv')
+df_meteo['Data'] = pd.to_datetime(df_meteo['Data'])
+
+# Criar seção para análise individual de variáveis
+st.markdown("## Análise Individual de Variáveis")
+
+# Seletor de variável
+variavel_selecionada = st.selectbox(
+    'Selecione a variável para análise detalhada',
+    ['Temperatura', 'Pressão', 'Umidade', 'Precipitação']
+)
+
+# Mapeamento de variáveis para colunas do DataFrame
+var_map = {
+    'Temperatura': {'col': 'Temperatura_C', 'unit': '°C', 'color': 'Reds'},
+    'Pressão': {'col': 'Pressao_hPa', 'unit': 'hPa', 'color': 'Blues'},
+    'Umidade': {'col': 'Umidade_Perc', 'unit': '%', 'color': 'Greens'},
+    'Precipitação': {'col': 'Precipitacao_mm', 'unit': 'mm', 'color': 'Purples'}
+}
+
+# Obter informações da variável selecionada
+var_info = var_map[variavel_selecionada]
+var_col = var_info['col']
+var_unit = var_info['unit']
+
+# Criar abas para diferentes análises
+tab1, tab2, tab3 = st.tabs(['Série Temporal', 'Estatísticas', 'Comparação por Cidade'])
+
+# Função para criar gráfico de linha
+def plot_variable(df, variable, title, y_label, color_scale):
+    fig = go.Figure()
+    for cidade in df['Cidade'].unique():
+        cidade_data = df[df['Cidade'] == cidade]
+        fig.add_trace(go.Scatter(
+            x=cidade_data['Data'],
+            y=cidade_data[variable],
+            name=cidade,
+            mode='lines',
+            line=dict(width=2)
+        ))
+    fig.update_layout(
+        title=title,
+        xaxis_title='Data',
+        yaxis_title=y_label,
+        template='plotly_white',
+        showlegend=True,
+        legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1)
+    )
+    return fig
+
+# Aba de Série Temporal
+with tab1:
+    st.plotly_chart(plot_variable(
+        df_meteo,
+        var_col,
+        f'{variavel_selecionada} por Cidade',
+        f'{variavel_selecionada} ({var_unit})',
+        var_info['color']
+    ), use_container_width=True)
+
+# Aba de Estatísticas
+with tab2:
+    # Calcular estatísticas por cidade
+    stats = df_meteo.groupby('Cidade')[var_col].agg([
+        ('Média', 'mean'),
+        ('Mínima', 'min'),
+        ('Máxima', 'max'),
+        ('Desvio Padrão', 'std')
+    ]).round(2)
+    
+    # Exibir estatísticas
+    st.markdown(f"### Estatísticas de {variavel_selecionada}")
+    st.dataframe(stats, use_container_width=True)
+    
+    # Criar gráfico de boxplot
+    fig_box = go.Figure()
+    for cidade in df_meteo['Cidade'].unique():
+        fig_box.add_trace(go.Box(
+            y=df_meteo[df_meteo['Cidade'] == cidade][var_col],
+            name=cidade,
+            boxpoints='outliers'
+        ))
+    fig_box.update_layout(
+        title=f'Distribuição de {variavel_selecionada} por Cidade',
+        yaxis_title=f'{variavel_selecionada} ({var_unit})',
+        showlegend=False
+    )
+    st.plotly_chart(fig_box, use_container_width=True)
+
+# Aba de Comparação por Cidade
+with tab3:
+    # Seletor de cidades para comparação
+    cidades_selecionadas = st.multiselect(
+        'Selecione as cidades para comparar',
+        df_meteo['Cidade'].unique(),
+        default=list(df_meteo['Cidade'].unique())[:2]
+    )
+    
+    if cidades_selecionadas:
+        # Filtrar dados para as cidades selecionadas
+        df_comparacao = df_meteo[df_meteo['Cidade'].isin(cidades_selecionadas)]
+        
+        # Criar gráfico de comparação
+        fig_comp = go.Figure()
+        for cidade in cidades_selecionadas:
+            cidade_data = df_comparacao[df_comparacao['Cidade'] == cidade]
+            fig_comp.add_trace(go.Scatter(
+                x=cidade_data['Data'],
+                y=cidade_data[var_col],
+                name=cidade,
+                mode='lines+markers'
+            ))
+        fig_comp.update_layout(
+            title=f'Comparação de {variavel_selecionada} entre Cidades Selecionadas',
+            xaxis_title='Data',
+            yaxis_title=f'{variavel_selecionada} ({var_unit})',
+            showlegend=True
+        )
+        st.plotly_chart(fig_comp, use_container_width=True)
+        
+        # Calcular correlação entre cidades
+        if len(cidades_selecionadas) > 1:
+            st.markdown("### Correlação entre Cidades")
+            pivot_data = df_comparacao.pivot(index='Data', columns='Cidade', values=var_col)
+            corr_matrix = pivot_data.corr().round(3)
+            st.dataframe(corr_matrix, use_container_width=True)
 
 
+
+# Cálculo da média mensal de precipitação para o ano selecionado
+df_meteo['Mes'] = pd.to_datetime(df_meteo['Data']).dt.month
+precipitacao_media = df_meteo.groupby('Mes')['Precipitacao_mm'].mean().values
 
 # Cálculo de índices
 RAF = AFE * RPF
