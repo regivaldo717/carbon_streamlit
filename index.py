@@ -17,5 +17,4 @@ with col2:
 with col3:
     st.page_link("pages/rebanhos.py", label="Rebanhos", icon="🐄")
 
-with col4:
-    st.page_link("pages/simulacao.py", label="Simulação", icon="📊")
+
