@@ -5,21 +5,21 @@ import plotly.express as px
 def load_and_prepare_data():
     df = pd.read_excel("data/dados_agricolas/producao_qtde_produzida.xlsx")
     
-    # Filtrando apenas dados do MS
-    df = df[df['UF'] == 'MS']
+    # Removendo espaços extras e caracteres especiais dos nomes das colunas
+    df.columns = [col.strip() for col in df.columns]
     
-    # Renomeando as colunas para remover UF repetido
-    df.columns = [col.replace(' UF', '') for col in df.columns]
+    # Filtrando apenas as colunas do MS
+    ms_cols = [col for col in df.columns if 'MS' in col]
     
-    # Separando dados dos produtos
-    algodao_cols = [col for col in df.columns if col.startswith('Algodão')]
-    cafe_cols = [col for col in df.columns if col.startswith('Café')]
-    cana_cols = [col for col in df.columns if col.startswith('Cana-de-açúcar')]
-    soja_cols = [col for col in df.columns if col.startswith('Soja')]
-    graos_cols = [col for col in df.columns if col.startswith('Grãos')]
-    laranja_cols = [col for col in df.columns if col.startswith('Laranja')]
-    madeira_cols = [col for col in df.columns if col.startswith('Madeira para Papel e Celulose')]
-    milho_cols = [col for col in df.columns if col.startswith('Milho')]
+    # Separando dados dos produtos apenas para MS
+    algodao_cols = [col for col in ms_cols if col.startswith('Algodão')]
+    cafe_cols = [col for col in ms_cols if col.startswith('Café')]
+    cana_cols = [col for col in ms_cols if col.startswith('Cana-de-açúcar')]
+    soja_cols = [col for col in ms_cols if col.startswith('Soja')]
+    graos_cols = [col for col in ms_cols if col.startswith('Grãos')]
+    laranja_cols = [col for col in ms_cols if col.startswith('Laranja')]
+    madeira_cols = [col for col in ms_cols if col.startswith('Madeira para Papel e Celulose')]
+    milho_cols = [col for col in ms_cols if col.startswith('Milho')]
 
     return df, algodao_cols, cafe_cols, cana_cols, soja_cols, graos_cols, laranja_cols, madeira_cols, milho_cols
 
@@ -41,44 +41,143 @@ def create_dashboard():
         "Produção de Milho"
     ])
     with tab1:
-        st.header("Análise da Produção de Algodão por Estado")
+        st.header("Análise da Produção de Algodão em MS")
         
-        # Gráfico de barras para comparação entre estados
+        # Gráfico de barras para produção em MS
         fig_algodao = px.bar(
             df,
             y=algodao_cols,
-            title="Produção de Algodão por Estado",
-            labels={'value': 'Quantidade Produzida', 'variable': 'Estado'},
+            title="Produção de Algodão em MS",
+            labels={'value': 'Quantidade Produzida', 'variable': 'Tipo'},
             height=500
         )
         st.plotly_chart(fig_algodao, use_container_width=True)
         
-        # Mapa de calor para visualizar correlações
-        st.subheader("Correlação entre Estados - Produção de Algodão")
-        corr_algodao = df[algodao_cols].corr()
-        fig_corr = px.imshow(
-            corr_algodao,
-            title="Mapa de Correlação - Produção de Algodão",
-            labels=dict(color="Correlação")
-        )
-        st.plotly_chart(fig_corr, use_container_width=True)
+        # Estatísticas descritivas
+        st.subheader("Estatísticas da Produção de Algodão em MS")
+        if len(algodao_cols) > 0:
+            st.dataframe(df[algodao_cols].describe())
+        else:
+            st.warning("Nenhuma coluna de algodão encontrada para análise.")
     
     with tab2:
-        st.header("Análise da Produção de Café")
+        st.header("Análise da Produção de Café em MS")
         
         # Gráfico de barras para produção de café
         fig_cafe = px.bar(
             df,
             y=cafe_cols,
             title="Produção de Café em MS",
-            labels={'value': 'Quantidade', 'variable': 'Tipo'},
+            labels={'value': 'Quantidade Produzida', 'variable': 'Tipo'},
             height=500
         )
         st.plotly_chart(fig_cafe, use_container_width=True)
         
         # Estatísticas descritivas
-        st.subheader("Estatísticas da Produção de Café")
+        st.subheader("Estatísticas da Produção de Café em MS")
         st.dataframe(df[cafe_cols].describe())
+    
+    with tab3:
+        st.header("Análise da Produção de Cana-de-açúcar em MS")
+        
+        # Gráfico de barras para produção de cana
+        fig_cana = px.bar(
+            df,
+            y=cana_cols,
+            title="Produção de Cana-de-açúcar em MS",
+            labels={'value': 'Quantidade Produzida', 'variable': 'Tipo'},
+            height=500
+        )
+        st.plotly_chart(fig_cana, use_container_width=True)
+        
+        # Estatísticas descritivas
+        st.subheader("Estatísticas da Produção de Cana-de-açúcar em MS")
+        st.dataframe(df[cana_cols].describe())
+    
+    with tab4:
+        st.header("Análise da Produção de Soja em MS")
+        
+        # Gráfico de barras para produção de soja
+        fig_soja = px.bar(
+            df,
+            y=soja_cols,
+            title="Produção de Soja em MS",
+            labels={'value': 'Quantidade Produzida', 'variable': 'Tipo'},
+            height=500
+        )
+        st.plotly_chart(fig_soja, use_container_width=True)
+        
+        # Estatísticas descritivas
+        st.subheader("Estatísticas da Produção de Soja em MS")
+        st.dataframe(df[soja_cols].describe())
+    
+    with tab5:
+        st.header("Análise da Produção de Grãos em MS")
+        
+        # Gráfico de barras para produção de grãos
+        fig_graos = px.bar(
+            df,
+            y=graos_cols,
+            title="Produção de Grãos em MS",
+            labels={'value': 'Quantidade Produzida', 'variable': 'Tipo'},
+            height=500
+        )
+        st.plotly_chart(fig_graos, use_container_width=True)
+        
+        # Estatísticas descritivas
+        st.subheader("Estatísticas da Produção de Grãos em MS")
+        st.dataframe(df[graos_cols].describe())
+    
+    with tab6:
+        st.header("Análise da Produção de Laranja em MS")
+        
+        # Gráfico de barras para produção de laranja
+        fig_laranja = px.bar(
+            df,
+            y=laranja_cols,
+            title="Produção de Laranja em MS",
+            labels={'value': 'Quantidade Produzida', 'variable': 'Tipo'},
+            height=500
+        )
+        st.plotly_chart(fig_laranja, use_container_width=True)
+        
+        # Estatísticas descritivas
+        st.subheader("Estatísticas da Produção de Laranja em MS")
+        st.dataframe(df[laranja_cols].describe())
+    
+    with tab7:
+        st.header("Análise da Produção de Madeira em MS")
+        
+        # Gráfico de barras para produção de madeira
+        fig_madeira = px.bar(
+            df,
+            y=madeira_cols,
+            title="Produção de Madeira em MS",
+            labels={'value': 'Quantidade Produzida', 'variable': 'Tipo'},
+            height=500
+        )
+        st.plotly_chart(fig_madeira, use_container_width=True)
+        
+        # Estatísticas descritivas
+        st.subheader("Estatísticas da Produção de Madeira em MS")
+        st.dataframe(df[madeira_cols].describe())
+    
+    with tab8:
+        st.header("Análise da Produção de Milho em MS")
+        
+        # Gráfico de barras para produção de milho
+        fig_milho = px.bar(
+            df,
+            y=milho_cols,
+            title="Produção de Milho em MS",
+            labels={'value': 'Quantidade Produzida', 'variable': 'Tipo'},
+            height=500
+        )
+        st.plotly_chart(fig_milho, use_container_width=True)
+        
+        # Estatísticas descritivas
+        st.subheader("Estatísticas da Produção de Milho em MS")
+        st.dataframe(df[milho_cols].describe())
 
 if __name__ == "__main__":
     create_dashboard()
