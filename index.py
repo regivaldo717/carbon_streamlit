@@ -12,9 +12,10 @@ with col1:
     st.page_link("pages/agricola.py", label="Agrícola", icon="🌱")
 
 with col2:
-    st.page_link("pages/meteorologicos.py", label="Meteorológg", icon="☁️")
+    st.page_link("pages/meteorogg.py", label="Meteorologg", icon="☁️")
 
 with col3:
     st.page_link("pages/rebanhos.py", label="Rebanhos", icon="🐄")
 
-
+with col4:
+    st.page_link("pages/estatisticas.py", label="Estatísticas", icon="📊")
