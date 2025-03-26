@@ -105,8 +105,8 @@ if selected_cities:
     st.write('Localização das Cidades Selecionadas')
     folium_static(m)
     
-    # Criar layout com 3 colunas
-    col1, col2, col3 = st.columns(3)
+    # Criar layout com 2 colunas
+    col1, col2 = st.columns(2)
     
     with col1:
         # Gráfico 1: Boxplot de temperatura por mês
@@ -143,23 +143,7 @@ if selected_cities:
         )
         st.plotly_chart(fig_wind, use_container_width=True)
     
-    with col3:
-        # Gráfico 3: Dispersão entre vento e precipitação
-        fig_scatter = go.Figure()
-        for city in selected_cities:
-            df = city_data[city]
-            fig_scatter.add_trace(go.Scatter(
-                x=df['VentoVelocidadeMedia'],
-                y=df['PrecipitacaoTotal'],
-                mode='markers',
-                name=city
-            ))
-        fig_scatter.update_layout(
-            title='Relação entre Vento e Precipitação',
-            xaxis_title='Velocidade Média do Vento (m/s)',
-            yaxis_title='Precipitação Total (mm)'
-        )
-        st.plotly_chart(fig_scatter, use_container_width=True)
+
     
     # Mostrar estatísticas básicas para cada cidade
     for city in selected_cities:
