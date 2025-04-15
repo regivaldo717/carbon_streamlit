@@ -105,11 +105,12 @@ if selected_cities:
     st.write('Localização das Cidades Selecionadas')
     folium_static(m)
     
-    # Criar layout com 2 colunas
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        # Gráfico 1: Boxplot de temperatura por mês
+    # Layout para múltiplos gráficos: 3 colunas por linha
+    col_temp, col_precip, col_press = st.columns(3)
+    col_vmax, col_vmed, col_dias = st.columns(3)
+
+    # Gráfico 1: Boxplot de temperatura por mês
+    with col_temp:
         fig_temp = go.Figure()
         for city in selected_cities:
             df = city_data[city]
@@ -124,27 +125,97 @@ if selected_cities:
             yaxis_title='Temperatura Média (°C)'
         )
         st.plotly_chart(fig_temp, use_container_width=True)
-    
-    with col2:
-        # Gráfico 2: Linha temporal de velocidade média do vento
-        fig_wind = go.Figure()
+
+    # Gráfico 2: Linha temporal de Precipitação Total
+    with col_precip:
+        fig_precip = go.Figure()
         for city in selected_cities:
             df = city_data[city]
-            fig_wind.add_trace(go.Scatter(
+            fig_precip.add_trace(go.Scatter(
+                x=df['Data'],
+                y=df['PrecipitacaoTotal'],
+                name=city,
+                mode='lines'
+            ))
+        fig_precip.update_layout(
+            title='Precipitação Total ao Longo do Tempo',
+            xaxis_title='Data',
+            yaxis_title='Precipitação Total (mm)'
+        )
+        st.plotly_chart(fig_precip, use_container_width=True)
+
+    # Gráfico 3: Linha temporal de Pressão Atmosférica
+    with col_press:
+        fig_press = go.Figure()
+        for city in selected_cities:
+            df = city_data[city]
+            fig_press.add_trace(go.Scatter(
+                x=df['Data'],
+                y=df['PressaoAtmosferica'],
+                name=city,
+                mode='lines'
+            ))
+        fig_press.update_layout(
+            title='Pressão Atmosférica ao Longo do Tempo',
+            xaxis_title='Data',
+            yaxis_title='Pressão Atmosférica (mB)'
+        )
+        st.plotly_chart(fig_press, use_container_width=True)
+
+    # Gráfico 4: Linha temporal de Velocidade Máxima do Vento
+    with col_vmax:
+        fig_vmax = go.Figure()
+        for city in selected_cities:
+            df = city_data[city]
+            fig_vmax.add_trace(go.Scatter(
+                x=df['Data'],
+                y=df['VentoVelocidadeMaxima'],
+                name=city,
+                mode='lines'
+            ))
+        fig_vmax.update_layout(
+            title='Velocidade Máxima do Vento ao Longo do Tempo',
+            xaxis_title='Data',
+            yaxis_title='Velocidade Máxima (m/s)'
+        )
+        st.plotly_chart(fig_vmax, use_container_width=True)
+
+    # Gráfico 5: Linha temporal de Velocidade Média do Vento
+    with col_vmed:
+        fig_vmed = go.Figure()
+        for city in selected_cities:
+            df = city_data[city]
+            fig_vmed.add_trace(go.Scatter(
                 x=df['Data'],
                 y=df['VentoVelocidadeMedia'],
                 name=city,
                 mode='lines'
             ))
-        fig_wind.update_layout(
+        fig_vmed.update_layout(
             title='Velocidade Média do Vento ao Longo do Tempo',
             xaxis_title='Data',
-            yaxis_title='Velocidade Média do Vento (m/s)'
+            yaxis_title='Velocidade Média (m/s)'
         )
-        st.plotly_chart(fig_wind, use_container_width=True)
-    
+        st.plotly_chart(fig_vmed, use_container_width=True)
 
-    
+    # Gráfico 6: Linha temporal de Número de Dias com Precipitação
+    with col_dias:
+        fig_dias = go.Figure()
+        for city in selected_cities:
+            df = city_data[city]
+            fig_dias.add_trace(go.Scatter(
+                x=df['Data'],
+                y=df['DiasPrecipitacao'],
+                name=city,
+                mode='lines'
+            ))
+        fig_dias.update_layout(
+            title='Número de Dias com Precipitação ao Longo do Tempo',
+            xaxis_title='Data',
+            yaxis_title='Dias com Precipitação'
+        )
+        st.plotly_chart(fig_dias, use_container_width=True)
+
     # Mostrar estatísticas básicas para cada cidade
     for city in selected_cities:
         st.subheader(f'Estatísticas Básicas - {city}')
