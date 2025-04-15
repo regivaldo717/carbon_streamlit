@@ -3,6 +3,18 @@ import pandas as pd
 import numpy as np
 from app_completo import carregar_agricolas, carregar_rebanhos, carregar_meteorologicos
 
+# Novos imports para modelos
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import LinearRegression
+try:
+    from prophet import Prophet
+    prophet_available = True
+except ImportError:
+    prophet_available = False
+from statsmodels.tsa.arima.model import ARIMA
+import warnings
+warnings.filterwarnings("ignore")
+
 st.title('Análise Preditiva de Carbono - MS')
 
 # Carregar dados
@@ -49,17 +61,15 @@ with st.container():
     qtd_rebanho = st.slider(f'Quantidade de {rebanho_sel}', 0, int(df_rebanhos[df_rebanhos["tipo_rebanho"]==rebanho_sel]["quantidade"].max()*2) if "tipo_rebanho" in df_rebanhos.columns else 1000, 100) if rebanhos else 0
     valor_clima = st.slider(f'Valor de {clima_sel}', float(df_meteo[clima_sel].min()), float(df_meteo[clima_sel].max()), float(df_meteo[clima_sel].mean())) if clima_vars else 0
 
-    # Gráfico de emissão de carbono baseado nas escolhas
-    st.subheader('Emissão de Carbono (Agrícola + Rebanho)')
-
-    st.markdown("""
-    **Como é feita a conta da predição:**
-    - Para cada ano histórico, soma-se a emissão proporcional da cultura agrícola escolhida e do tipo de rebanho escolhido.
-    - A emissão agrícola é ajustada conforme a quantidade selecionada no slider, proporcional ao valor histórico máximo.
-    - A emissão de rebanho é ajustada conforme a quantidade selecionada no slider, proporcional ao valor histórico máximo.
-    - Para prever os próximos 5 anos, é feita uma regressão linear simples (reta) sobre os anos históricos e a soma das emissões.
-    - Os valores previstos são mostrados no gráfico e na tabela abaixo.
-    """)
+    # NOVO: Escolha do modelo
+    modelos = [
+        "Regressão Linear",
+        "ARIMA/SARIMA",
+        "Prophet",
+        "LSTM (Deep Learning)",
+        "Random Forest"
+    ]
+    modelo_sel = st.selectbox("Escolha seu modelo de predição", modelos)
 
     # Calcular emissão agrícola (proporcional à quantidade escolhida)
     if 'Ano' in df_agricola.columns:
@@ -87,39 +97,94 @@ with st.container():
     df_emissao['emissao_total'] = df_emissao['emissao_agricola'] + df_emissao['emissao_rebanho']
     df_emissao = df_emissao.sort_values('ano')
 
-    # Predição para os próximos 5 anos usando regressão linear simples
-    try:
-        anos_hist = df_emissao['ano'].astype(int).values
-        emissao_hist = df_emissao['emissao_total'].values
+    # NOVO: Predição baseada no modelo selecionado
+    anos_hist = df_emissao['ano'].astype(int).values
+    emissao_hist = df_emissao['emissao_total'].values
 
-        # Apenas se houver pelo menos 2 anos de dados
-        if len(anos_hist) >= 2:
-            coef = np.polyfit(anos_hist, emissao_hist, 1)
-            poly = np.poly1d(coef)
-            ano_max = anos_hist.max()
-            anos_pred = np.arange(ano_max + 1, ano_max + 6)
-            emissao_pred = poly(anos_pred)
+    df_emissao_plot = pd.DataFrame(columns=['emissao_total'])
+    erro_modelo = None
 
-            df_pred = pd.DataFrame({
-                'ano': anos_pred.astype(str),
-                'emissao_total': emissao_pred
-            })
+    if len(anos_hist) >= 2:
+        try:
+            if modelo_sel == "Regressão Linear":
+                coef = np.polyfit(anos_hist, emissao_hist, 1)
+                poly = np.poly1d(coef)
+                ano_max = anos_hist.max()
+                anos_pred = np.arange(ano_max + 1, ano_max + 6)
+                emissao_pred = poly(anos_pred)
+                df_pred = pd.DataFrame({
+                    'ano': anos_pred.astype(str),
+                    'emissao_total': emissao_pred
+                })
+                df_emissao_plot = df_pred.set_index('ano')
 
-            # Exibir apenas os próximos 5 anos previstos no gráfico
-            df_emissao_plot = df_pred.set_index('ano')
-        else:
-            df_emissao_plot = pd.DataFrame(columns=['emissao_total'])
-    except Exception:
-        df_emissao_plot = pd.DataFrame(columns=['emissao_total'])
+            elif modelo_sel == "ARIMA/SARIMA":
+                model = ARIMA(emissao_hist, order=(1,1,1))
+                model_fit = model.fit()
+                forecast = model_fit.forecast(steps=5)
+                ano_max = anos_hist.max()
+                anos_pred = np.arange(ano_max + 1, ano_max + 6)
+                df_pred = pd.DataFrame({
+                    'ano': anos_pred.astype(str),
+                    'emissao_total': forecast
+                })
+                df_emissao_plot = df_pred.set_index('ano')
 
-    st.line_chart(
-        df_emissao_plot[['emissao_total']],
-        use_container_width=True
-    )
+            elif modelo_sel == "Prophet":
+                if prophet_available:
+                    df_prophet = pd.DataFrame({
+                        'ds': pd.to_datetime(df_emissao['ano'], format='%Y'),
+                        'y': df_emissao['emissao_total']
+                    })
+                    m = Prophet(yearly_seasonality=False, daily_seasonality=False, weekly_seasonality=False)
+                    m.fit(df_prophet)
+                    future = m.make_future_dataframe(periods=5, freq='Y')
+                    forecast = m.predict(future)
+                    forecast_pred = forecast.tail(5)
+                    anos_pred = forecast_pred['ds'].dt.year.astype(str).values
+                    emissao_pred = forecast_pred['yhat'].values
+                    df_pred = pd.DataFrame({
+                        'ano': anos_pred,
+                        'emissao_total': emissao_pred
+                    })
+                    df_emissao_plot = df_pred.set_index('ano')
+                else:
+                    erro_modelo = "Prophet não está instalado. Use: pip install prophet"
 
-    # Mostrar tabela dos valores previstos
-    st.caption("Valores previstos para os próximos 5 anos:")
-    st.dataframe(df_emissao_plot.reset_index().rename(columns={'ano': 'Ano', 'emissao_total': 'Emissão Prevista'}))
+            elif modelo_sel == "Random Forest":
+                X = anos_hist.reshape(-1, 1)
+                y = emissao_hist
+                rf = RandomForestRegressor(n_estimators=100)
+                rf.fit(X, y)
+                ano_max = anos_hist.max()
+                anos_pred = np.arange(ano_max + 1, ano_max + 6)
+                emissao_pred = rf.predict(anos_pred.reshape(-1, 1))
+                df_pred = pd.DataFrame({
+                    'ano': anos_pred.astype(str),
+                    'emissao_total': emissao_pred
+                })
+                df_emissao_plot = df_pred.set_index('ano')
+
+            elif modelo_sel == "LSTM (Deep Learning)":
+                erro_modelo = "Predição LSTM não implementada nesta demonstração."
+
+        except Exception as e:
+            erro_modelo = f"Erro ao rodar o modelo: {e}"
+
+    # Gráfico de emissão de carbono baseado nas escolhas
+    st.subheader(f'Emissão de Carbono (Agrícola + Rebanho) - Modelo: {modelo_sel}')
+
+    if erro_modelo:
+        st.error(erro_modelo)
+    else:
+        st.line_chart(
+            df_emissao_plot[['emissao_total']],
+            use_container_width=True
+        )
+
+        # Mostrar tabela dos valores previstos
+        st.caption("Valores previstos para os próximos 5 anos:")
+        st.dataframe(df_emissao_plot.reset_index().rename(columns={'ano': 'Ano', 'emissao_total': 'Emissão Prevista'}))
 
     # Resultados e simulação
     st.subheader('Resultados')
