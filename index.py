@@ -6,7 +6,7 @@ st.title("Bem-vindo ao Sistema")
 st.write("Escolha uma das opções abaixo para navegar:")
 
 # Criando botões para navegação
-col1, col2, col3, col4 = st.columns(4)
+col1, col2, col3, col4, col5 = st.columns(5)
 
 with col1:
     st.page_link("pages/agricola.py", label="Agrícola", icon="🌱")
@@ -16,4 +16,10 @@ with col2:
 
 with col3:
     st.page_link("pages/rebanhos.py", label="Rebanhos", icon="🐄")
+
+with col4:
+    st.page_link("pages/analise_preditiva.py", label="Análise Preditiva", icon="📊")
+
+with col5:
+    st.page_link("pages/carbono.py", label="Carbono", icon="🟩")
 
