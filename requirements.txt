@@ -19,3 +19,4 @@ graphviz
 statsmodels
 prophet
 seaborn
+scikit-learn
