@@ -20,3 +20,4 @@ statsmodels
 prophet
 seaborn
 scikit-learn
+tensorflow

@@ -216,6 +216,35 @@ if selected_cities:
         )
         st.plotly_chart(fig_dias, use_container_width=True)
 
+    # Gráfico de barras: Média de precipitação total por cidade + Estado
+    st.markdown("### Média de Precipitação Total (mm) por Cidade e Estado")
+    # Calcular média de precipitação por cidade
+    medias_precip = {city: df['PrecipitacaoTotal'].mean() for city, df in city_data.items()}
+    # Calcular média do estado (média das cidades)
+    media_estado = sum(medias_precip.values()) / len(medias_precip) if medias_precip else 0
+
+    cidades = list(medias_precip.keys()) + ["Estado"]
+    medias = list(medias_precip.values()) + [media_estado]
+
+    # Definir cores do roxo ao amarelo (usando escala 'plasma' invertida)
+    fig_bar = px.bar(
+        x=cidades,
+        y=medias,
+        color=medias,
+        color_continuous_scale=px.colors.sequential.Plasma[::-1],
+        labels={'x': 'Cidade', 'y': 'Média de Precipitação (mm)', 'color': 'Precipitação'},
+        text=[f"{v:.1f}" for v in medias]
+    )
+    fig_bar.update_traces(textposition='outside')
+    fig_bar.update_layout(
+        showlegend=False,
+        xaxis_title="Cidade",
+        yaxis_title="Média de Precipitação Total (mm)",
+        coloraxis_showscale=False,
+        yaxis=dict(range=[0, max(medias)*1.15])
+    )
+    st.plotly_chart(fig_bar, use_container_width=True)
+
     # Mostrar estatísticas básicas para cada cidade
     for city in selected_cities:
         st.subheader(f'Estatísticas Básicas - {city}')
